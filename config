@@ -1,1 +1,32 @@
 default=nothing
+@Repository("spotDailySummaryDaoImpl2")
++public class SpotDailySummaryDaoImpl implements SpotDailySummaryDao {
++
++  @Autowired
++  @Qualifier("compassSummaryJdbc")
++  private NamedParameterJdbcOperations namedParameterJdbc;
++
++  @Override
++  public List<Tuple2<Integer, Long>> selectTotalImpressions(List<Integer> structIds, Date targetDate) {
++    String sql =
++      "SELECT struct_id, SUM(impression) AS impression " +
++      "FROM spot_daily_summary " +
++      "WHERE struct_id IN (:structIdList) " +
++      "AND target_date = :targetDate " +
++      "GROUP BY struct_id ";
++
++    MapSqlParameterSource paramMap = new MapSqlParameterSource();
++    paramMap.addValue("structIdList", structIds)
++            .addValue("targetDate",   targetDate);
++    return namedParameterJdbc.query(sql, paramMap, new RowMapper<Tuple2<Integer, Long>>() {
++
++      @Override
++      public Tuple2<Integer, Long> mapRow(ResultSet rs, int rowNum) throws SQLException {
++        Integer structId = rs.getInt("struct_id");
++        Long impression = rs.getLong("impression");
++        return new Tuple2<>(structId, impression);
++      }
++
++    });
++  }
++}
